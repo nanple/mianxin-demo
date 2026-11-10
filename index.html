@@ -1,0 +1,687 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>眠心 · AI 辅助大学生睡眠与情绪改善工具（原型）</title>
+<style>
+  :root{
+    --bg1:#eef1fb; --bg2:#e6e1f7;
+    --primary:#6b7fd7; --primary-d:#5566c2; --purple:#9a86d9; --purple-l:#efeafc;
+    --blue-l:#eaf0fd; --text:#2f3350; --sub:#7a7f9c; --line:#e4e6f2; --card:#ffffff;
+    --warn:#e08a5a; --warn-l:#fdf1ea; --ok:#5aa98a;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{
+    font-family:"PingFang SC","Hiragino Sans GB","Microsoft YaHei","Noto Sans CJK SC","Noto Sans SC","Source Han Sans SC",sans-serif;
+    background:linear-gradient(160deg,var(--bg1),var(--bg2));
+    color:var(--text);display:flex;justify-content:center;align-items:center;min-height:100vh;
+  }
+  .phone{
+    width:390px;height:min(844px,calc(100vh - 24px));background:#f7f8fd;border-radius:38px;
+    box-shadow:0 20px 50px rgba(90,90,160,.25),0 0 0 8px #fff,0 0 0 9px #dcdff0;
+    overflow:hidden;display:flex;flex-direction:column;position:relative;
+  }
+  .statusbar{height:30px;display:flex;justify-content:space-between;align-items:center;padding:0 26px;font-size:12px;color:var(--sub);flex-shrink:0;background:linear-gradient(180deg,#e9ecfb,#f7f8fd)}
+  header.top{padding:4px 20px 10px;background:linear-gradient(180deg,#f7f8fd00,#f7f8fd);flex-shrink:0}
+  header.top h1{font-size:20px;font-weight:700;letter-spacing:.5px}
+  header.top p{font-size:12px;color:var(--sub);margin-top:2px}
+  main{flex:1;overflow-y:auto;padding:0 16px 16px;scrollbar-width:none}
+  main::-webkit-scrollbar{display:none}
+  .view{display:none}
+  .view.active{display:block}
+  nav.tabs{display:flex;border-top:1px solid var(--line);background:#fff;flex-shrink:0;padding-bottom:10px}
+  nav.tabs button{flex:1;border:0;background:none;padding:9px 0 4px;font-size:12px;color:var(--sub);cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:3px;font-family:inherit}
+  nav.tabs button .ic{font-size:20px;line-height:1;filter:grayscale(.6);opacity:.7}
+  nav.tabs button.active{color:var(--primary-d);font-weight:600}
+  nav.tabs button.active .ic{filter:none;opacity:1}
+  .card{background:var(--card);border-radius:18px;padding:14px 16px;margin-bottom:12px;box-shadow:0 2px 10px rgba(100,110,180,.07)}
+  .card h3{font-size:15px;margin-bottom:10px;display:flex;align-items:center;gap:6px}
+  .badge{display:inline-block;font-size:10px;padding:2px 7px;border-radius:10px;background:var(--purple-l);color:#7b63c9;font-weight:600;vertical-align:middle}
+  .badge.warn{background:var(--warn-l);color:#c56b3a}
+  .grid3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px 8px}
+  .grid3 .s2{grid-column:span 2}
+  label.f{display:flex;flex-direction:column;font-size:12px;color:var(--sub);gap:4px;min-width:0}
+  label.f input,label.f select{border:1px solid var(--line);border-radius:10px;padding:7px 8px;font-size:14px;color:var(--text);background:#fafbff;font-family:inherit;width:100%;min-width:0}
+  label.f input[type=time]{padding:7px 4px 7px 8px;font-size:13.5px}
+  label.f input[type=time]::-webkit-calendar-picker-indicator{margin-left:0;width:12px}
+  label.f input:focus,label.f select:focus{outline:2px solid #c9d1f5;border-color:var(--primary)}
+  .rating{display:flex;gap:6px}
+  .rating button{flex:1;border:1px solid var(--line);background:#fafbff;border-radius:10px;padding:6px 0;font-size:13px;cursor:pointer;color:var(--sub);font-family:inherit}
+  .rating button.on{background:var(--primary);color:#fff;border-color:var(--primary)}
+  .rating.mood button.on{background:var(--purple);border-color:var(--purple)}
+  .rowlabel{font-size:12px;color:var(--sub);margin:10px 0 5px;display:flex;justify-content:space-between}
+  .preview{display:flex;justify-content:space-between;background:var(--blue-l);border-radius:12px;padding:8px 12px;margin-top:10px}
+  .preview div{text-align:center;flex:1}
+  .preview b{display:block;font-size:16px;color:var(--primary-d)}
+  .preview span{font-size:11px;color:var(--sub)}
+  .btn{display:block;width:100%;border:0;border-radius:14px;padding:10px;font-size:15px;font-weight:600;color:#fff;background:linear-gradient(90deg,var(--primary),var(--purple));cursor:pointer;margin-top:10px;font-family:inherit}
+  .btn.ghost{background:#fff;color:var(--primary-d);border:1px solid #d5dbf5;font-weight:500;font-size:13px;padding:8px}
+  .btn.sm{width:auto;display:inline-block;padding:6px 12px;font-size:12px;margin-top:8px;margin-right:6px}
+  .entry{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px dashed var(--line)}
+  .entry:last-child{border-bottom:0}
+  .entry .d{width:44px;text-align:center;font-size:11px;color:var(--sub)}
+  .entry .d b{display:block;font-size:16px;color:var(--text)}
+  .entry .m{flex:1;font-size:12px;color:var(--sub);line-height:1.6}
+  .entry .m .t{color:var(--text);font-size:13px}
+  .entry .se{width:58px;text-align:right}
+  .entry .se b{font-size:17px}
+  .entry .se span{display:block;font-size:10px;color:var(--sub)}
+  .entry .del{border:0;background:none;color:#b8bbd0;font-size:16px;cursor:pointer;padding:4px}
+  .good{color:var(--ok)} .mid{color:var(--primary-d)} .low{color:var(--warn)}
+  .hint{font-size:11px;color:var(--sub);line-height:1.6}
+  .listhead{display:flex;justify-content:space-between;align-items:center;margin-bottom:4px}
+  .listhead a{font-size:12px;color:var(--primary-d);cursor:pointer;text-decoration:none}
+  .tip-line{font-size:11px;color:var(--primary-d);background:var(--blue-l);border-radius:10px;padding:6px 10px;margin-bottom:10px;line-height:1.5}
+  .fold{margin:8px 0 4px;border:1px dashed var(--line);border-radius:12px;overflow:hidden}
+  .fold>summary{list-style:none;cursor:pointer;font-size:12px;color:var(--sub);padding:8px 10px;background:#fafbff;display:flex;justify-content:space-between;align-items:center;user-select:none}
+  .fold>summary::-webkit-details-marker{display:none}
+  .fold>summary::after{content:"▾";font-size:11px;color:var(--sub)}
+  .fold[open]>summary::after{content:"▴"}
+  .fold .fold-body{padding:8px 10px 10px}
+  #save-feedback{display:none;margin-top:10px;border-radius:12px;padding:10px 12px;font-size:13px;line-height:1.65;position:relative}
+  #save-feedback.show{display:block}
+  #save-feedback.good{background:#eef8f3;color:#2d6b52;border:1px solid #c8e6d8}
+  #save-feedback.mid{background:var(--blue-l);color:var(--primary-d);border:1px solid #c9d4f5}
+  #save-feedback.low{background:var(--warn-l);color:#8a6a4f;border:1px solid #f0c9b0}
+  #save-feedback .fb-close{position:absolute;top:6px;right:10px;border:0;background:none;color:inherit;opacity:.55;cursor:pointer;font-size:16px;line-height:1}
+  #save-feedback .fb-title{font-weight:700;margin-bottom:4px;padding-right:18px}
+  .disclaimer{font-size:10.5px;color:var(--sub);line-height:1.65;padding:4px 6px 8px}
+  .oneliner{background:linear-gradient(120deg,#eaf0fd,#efeafc);border-radius:14px;padding:12px 14px;margin-bottom:12px;font-size:13px;line-height:1.7}
+  .oneliner .ol-label{font-size:11px;color:var(--sub);margin-bottom:4px;font-weight:600}
+  .toggle-row{display:flex;align-items:flex-start;gap:10px;padding:8px 0;font-size:13px;line-height:1.5}
+  .toggle-row input{margin-top:3px;accent-color:var(--primary);flex-shrink:0}
+  .window.ref-only{opacity:.72;filter:grayscale(.25)}
+  .window.ref-only b{color:#8a85b0}
+  .more-fold{margin-top:6px}
+  .more-fold>summary{font-size:12px;color:var(--primary-d);cursor:pointer;padding:4px 0;list-style:none}
+  .more-fold>summary::-webkit-details-marker{display:none}
+  .chat-progress{font-size:11px;color:var(--primary-d);background:var(--blue-l);border-radius:10px;padding:5px 10px;margin-bottom:0;display:flex;justify-content:space-between;align-items:center}
+  .breath-card{margin-top:8px;background:var(--purple-l);border-radius:12px;padding:10px 12px;font-size:12.5px;line-height:1.75;color:#5a4a8a}
+  /* chat */
+  .chat-sticky-head{position:sticky;top:0;z-index:2;background:linear-gradient(180deg,#f7f8fd 85%,rgba(247,248,253,.92));padding-bottom:6px;margin-bottom:6px;box-shadow:0 4px 10px rgba(247,248,253,.95)}
+  .notice{font-size:11px;line-height:1.6;color:#8a6a4f;background:var(--warn-l);border-radius:12px;padding:8px 10px;margin-bottom:6px}
+  .notice .demo{display:inline-block;margin-bottom:3px;font-size:10.5px;background:var(--purple-l);color:#7b63c9;padding:1px 8px;border-radius:8px;font-weight:600}
+  .notice b{color:#c56b3a}
+  .demo-tag{text-align:center;margin:4px 0 10px}
+  .demo-tag span{font-size:11px;background:var(--purple-l);color:#7b63c9;padding:3px 10px;border-radius:10px}
+  .chat{display:flex;flex-direction:column;gap:10px;padding-bottom:6px}
+  .msg{max-width:82%;padding:10px 12px;border-radius:16px;font-size:14px;line-height:1.6;white-space:pre-wrap;word-break:break-word}
+  .msg.ai{background:#fff;align-self:flex-start;border-top-left-radius:4px;box-shadow:0 2px 8px rgba(100,110,180,.08)}
+  .msg.me{background:linear-gradient(135deg,var(--primary),var(--purple));color:#fff;align-self:flex-end;border-top-right-radius:4px}
+  .msg.alert{background:#fff4ee;border:1px solid #f3cdb6;color:#7a4a2e}
+  .who{font-size:10px;color:var(--sub);margin-bottom:-6px}
+  .who.r{align-self:flex-end}
+  .chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:2px}
+  .chips button{border:1px solid #cdd4f4;background:#fff;color:var(--primary-d);border-radius:14px;padding:5px 11px;font-size:12px;cursor:pointer;font-family:inherit}
+  .chips button:hover{background:var(--blue-l)}
+  .composer{display:flex;gap:8px;padding:8px 12px;background:#fff;border-top:1px solid var(--line);flex-shrink:0}
+  .composer input{flex:1;border:1px solid var(--line);border-radius:18px;padding:9px 14px;font-size:14px;background:#fafbff;font-family:inherit}
+  .composer button{border:0;border-radius:18px;padding:0 16px;background:var(--primary);color:#fff;font-size:14px;cursor:pointer;font-family:inherit}
+  .composer.hidden{display:none}
+  .help-card{margin-top:6px;background:#fff;border:1px solid #f0c9b0;border-radius:12px;padding:8px 10px;font-size:12px;line-height:1.7;color:#7a4a2e}
+  /* weekly */
+  .kpis{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px}
+  .kpi{background:#fff;border-radius:14px;padding:10px 6px;text-align:center;box-shadow:0 2px 10px rgba(100,110,180,.07)}
+  .kpi b{display:block;font-size:19px;color:var(--primary-d)}
+  .kpi span{font-size:11px;color:var(--sub)}
+  .kpi.big{grid-column:span 3;display:flex;align-items:center;justify-content:space-between;padding:12px 16px;text-align:left;background:linear-gradient(120deg,#6b7fd7,#9a86d9);color:#fff}
+  .kpi.big b{color:#fff;font-size:30px}
+  .kpi.big span{color:#e8e6ff;font-size:12px}
+  .kpi.big .tag{background:rgba(255,255,255,.22);border-radius:10px;padding:4px 10px;font-size:12px}
+  .chart{display:flex;align-items:flex-end;justify-content:space-between;height:150px;padding:0 2px 0 26px;border-bottom:1px solid var(--line);position:relative}
+  .chart .ref{position:absolute;left:0;right:0;border-top:1px dashed #e6a07c;font-size:9px;color:#d08a64;text-align:left;padding-left:1px;pointer-events:none;line-height:1;margin-top:-0.55em}
+  .chart .col{flex:1;display:flex;justify-content:center;align-items:flex-end;gap:3px;height:100%;position:relative}
+  .bar{width:12px;border-radius:6px 6px 2px 2px;position:relative}
+  .bar.se{background:linear-gradient(180deg,#8fa0ea,#6b7fd7)}
+  .bar.mood{background:linear-gradient(180deg,#c3b4ef,#9a86d9)}
+  .bar em{position:absolute;top:-15px;left:50%;transform:translateX(-50%);font-size:9px;font-style:normal;color:var(--sub);white-space:nowrap}
+  .xlabels{display:flex;justify-content:space-between;padding:4px 2px 0 26px}
+  .xlabels span{flex:1;text-align:center;font-size:10px;color:var(--sub)}
+  .legend{display:flex;gap:14px;font-size:11px;color:var(--sub);margin-top:8px}
+  .legend i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:4px;vertical-align:-1px}
+  .sugg{display:flex;gap:10px;padding:10px 0;border-bottom:1px dashed var(--line)}
+  .sugg:last-child{border-bottom:0}
+  .sugg .n{width:24px;height:24px;flex-shrink:0;border-radius:50%;background:var(--blue-l);color:var(--primary-d);font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center}
+  .sugg p{font-size:13px;line-height:1.65}
+  .sugg p b{color:var(--primary-d)}
+  .window{display:flex;align-items:center;justify-content:space-between;background:var(--purple-l);border-radius:14px;padding:12px 14px;margin:4px 0 10px}
+  .window div{text-align:center}
+  .window b{display:block;font-size:20px;color:#6a55bf}
+  .window span{font-size:11px;color:var(--sub)}
+  .window .arrow{color:#b3a6e6;font-size:13px}
+  .toast{position:absolute;left:50%;bottom:90px;transform:translateX(-50%);background:rgba(47,51,80,.88);color:#fff;font-size:13px;padding:8px 16px;border-radius:16px;opacity:0;transition:opacity .25s;pointer-events:none;white-space:nowrap}
+  .toast.show{opacity:1}
+</style>
+</head>
+<body>
+<div class="phone">
+  <div class="statusbar"><span id="clock">23:12</span><span>📶 🔋 82%</span></div>
+  <header class="top">
+    <h1 id="title">睡眠日记</h1>
+    <p id="subtitle">约 1 分钟 · 填完立即看到睡眠效率</p>
+  </header>
+
+  <main id="main">
+    <!-- ========== 1. 睡眠日记 ========== -->
+    <section class="view active" id="view-diary">
+      <div class="card">
+        <h3>📝 记录昨晚</h3>
+        <div class="tip-line">预估 1 分钟 · 填完立即看到睡眠效率</div>
+        <div class="grid3">
+          <label class="f s2">日期（入睡当晚）<input type="date" id="f-date"></label>
+          <label class="f">上床时间<input type="time" id="f-bed" value="23:30"></label>
+          <label class="f">入睡用时(分)<input type="number" id="f-lat" min="0" max="300" value="20"></label>
+          <label class="f">最终醒来<input type="time" id="f-wake" value="07:30"></label>
+          <label class="f">离床时间<input type="time" id="f-out" value="07:45"></label>
+          <label class="f" style="justify-content:center"><span class="hint">卧床 = 上床→离床</span></label>
+        </div>
+        <details class="fold" id="fold-wakes">
+          <summary>夜醒情况（可选）</summary>
+          <div class="fold-body">
+            <div class="grid3">
+              <label class="f">夜醒次数<input type="number" id="f-wakes" min="0" max="20" value="0"></label>
+              <label class="f" title="夜间醒着的总时长，不含入睡用时">夜醒共计(分)<input type="number" id="f-waso" min="0" max="600" value="0"></label>
+            </div>
+          </div>
+        </details>
+        <div class="rowlabel"><span>睡眠质量</span><span>1 很差 · 5 很好</span></div>
+        <div class="rating" id="r-quality"></div>
+        <div class="rowlabel"><span>今天的情绪</span><span>1 很低落 · 5 很好</span></div>
+        <div class="rating mood" id="r-mood"></div>
+        <div class="preview">
+          <div><b id="p-tst">--</b><span>总睡眠时间</span></div>
+          <div><b id="p-tib">--</b><span>卧床时间</span></div>
+          <div><b id="p-se">--</b><span>睡眠效率</span></div>
+        </div>
+        <button class="btn" id="save">保存今天的日记</button>
+        <div id="save-feedback" aria-live="polite"></div>
+      </div>
+
+      <div class="card">
+        <div class="listhead">
+          <h3 style="margin:0">📅 最近记录</h3>
+          <a id="toggle-sample"></a>
+        </div>
+        <div id="entries"></div>
+        <p class="hint" style="margin-top:8px">睡眠效率 = 总睡眠时间 ÷ 卧床时间（上床 → 离床）。≥85% 通常被认为较好。</p>
+      </div>
+      <p class="disclaimer">眠心是自助工具，不能替代心理咨询或诊疗。需要帮助时见「睡前情绪梳理」页顶部资源。</p>
+    </section>
+
+    <!-- ========== 2. 睡前情绪梳理 ========== -->
+    <section class="view" id="view-chat">
+      <div class="chat-sticky-head">
+        <div class="notice">
+          <span class="demo">🤖 原型演示：AI 回复为模拟（规则脚本，非真实 AI）</span><br>
+          建议点选回答 · 约 5 步结束 · 结束后请放下手机<br>
+          ⚠️ 本功能用于睡前放松与思绪整理，<b>不能替代专业心理咨询或医疗诊断</b>。如果你感到痛苦强烈、持续两周以上情绪低落，或出现伤害自己的想法，请<b>尽快联系学校心理咨询中心</b>，紧急情况请拨打 120 / 110 或心理援助热线 12356。
+        </div>
+        <div class="chat-progress" id="chat-progress"><span id="chat-step-label">第 1/5 步</span><span>点选为主 · 可自填</span></div>
+      </div>
+      <div class="chat" id="chat"></div>
+    </section>
+
+    <!-- ========== 3. 每周建议 ========== -->
+    <section class="view" id="view-weekly">
+      <div id="weekly"></div>
+    </section>
+  </main>
+
+  <div class="composer hidden" id="composer">
+    <input id="chat-input" placeholder="把脑子里转的事写下来…" autocomplete="off">
+    <button id="chat-send">发送</button>
+  </div>
+
+  <nav class="tabs">
+    <button data-tab="diary" class="active"><span class="ic">📔</span>睡眠日记</button>
+    <button data-tab="chat"><span class="ic">🌙</span>睡前情绪梳理</button>
+    <button data-tab="weekly"><span class="ic">📊</span>每周建议</button>
+  </nav>
+  <div class="toast" id="toast"></div>
+</div>
+
+<script>
+(function(){
+  /* ---------- 工具函数 ---------- */
+  const $ = s => document.querySelector(s);
+  const KEY = 'sleepProto.entries.v1';
+  const KEY_SAMPLE = 'sleepProto.sampleHidden.v1';
+  const KEY_WORRY = 'sleepProto.worryList.v1';
+  const KEY_ADV = 'sleepProto.advRestrict.v1';
+  const toMin = t => { const [h,m] = t.split(':').map(Number); return h*60+m; };
+  const fmtHM = mins => { mins = Math.round(mins); const h = Math.floor(mins/60), m = mins%60; return h + '小时' + (m ? m + '分' : ''); };
+  const fmtShort = mins => { mins = Math.round(mins); return Math.floor(mins/60) + 'h' + String(mins%60).padStart(2,'0'); };
+  const clock = mins => { mins = ((Math.round(mins) % 1440) + 1440) % 1440; return String(Math.floor(mins/60)).padStart(2,'0') + ':' + String(mins%60).padStart(2,'0'); };
+  const ymd = d => d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+  const toast = msg => { const t = $('#toast'); t.textContent = msg; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'), 1600); };
+
+  function compute(e){
+    const bed = toMin(e.bed);
+    const norm = t => { let v = toMin(t); if (v < bed && bed >= 720) v += 1440; else if (v < bed) v += 1440; return v; };
+    const wake = norm(e.wake), out = Math.max(norm(e.out), wake);
+    const tib = out - bed;
+    const tst = Math.max(0, (wake - bed) - Number(e.lat||0) - Number(e.waso||0));
+    const se = tib > 0 ? tst / tib : 0;
+    return { tib, tst, se };
+  }
+  const seClass = se => se >= .85 ? 'good' : se >= .75 ? 'mid' : 'low';
+
+  function seFeedback(se){
+    const pct = Math.round(se * 100);
+    if (se >= .85) return {
+      cls: 'good', title: '睡眠效率 ' + pct + '% · 不错',
+      tip: '躺床清醒偏少，继续保持固定起床时间，困了再上床。'
+    };
+    if (se >= .75) return {
+      cls: 'mid', title: '睡眠效率 ' + pct + '% · 一般',
+      tip: '可以先固定起床时间；白天尽量不补觉，下午少喝咖啡/奶茶。'
+    };
+    return {
+      cls: 'low', title: '睡眠效率 ' + pct + '% · 卧床清醒偏多',
+      tip: '床和清醒容易绑在一起：困了再上床；约 20 分钟仍睡不着就先起床做安静的事。'
+    };
+  }
+
+  /* ---------- 示例数据（7 天） ---------- */
+  function sampleData(){
+    const rows = [
+      ['00:40', 45, 2, 25, '07:50', '08:30', 2, 2],
+      ['01:15', 35, 1, 15, '08:10', '08:40', 3, 3],
+      ['00:20', 60, 2, 30, '07:40', '08:20', 2, 2],
+      ['23:50', 30, 1, 20, '07:30', '08:10', 3, 3],
+      ['01:30', 50, 3, 35, '09:20', '10:00', 2, 1],
+      ['00:10', 25, 1, 10, '07:40', '08:00', 4, 4],
+      ['00:30', 40, 2, 20, '08:00', '08:35', 3, 3],
+    ];
+    const today = new Date();
+    return rows.map((r,i) => {
+      const d = new Date(today); d.setDate(today.getDate() - (7 - i));
+      return { id:'s'+i, date: ymd(d), bed:r[0], lat:r[1], wakes:r[2], waso:r[3], wake:r[4], out:r[5], quality:r[6], mood:r[7], sample:true };
+    });
+  }
+  const loadUser = () => { try { return JSON.parse(localStorage.getItem(KEY)) || []; } catch(e){ return []; } };
+  const saveUser = arr => localStorage.setItem(KEY, JSON.stringify(arr));
+  const sampleHidden = () => localStorage.getItem(KEY_SAMPLE) === '1';
+  function allEntries(){
+    const user = loadUser();
+    const list = sampleHidden() ? user.slice() : sampleData().concat(user);
+    const map = {};
+    list.forEach(e => { if (!map[e.date] || !e.sample) map[e.date] = e; });
+    return Object.values(map).sort((a,b) => a.date < b.date ? 1 : -1);
+  }
+  function lastUserEntry(){
+    const user = loadUser().slice().sort((a,b) => a.date < b.date ? 1 : -1);
+    return user[0] || null;
+  }
+
+  /* ---------- 1. 睡眠日记 ---------- */
+  let quality = 3, mood = 3;
+  function buildRating(el, get, set){
+    el.innerHTML = '';
+    for (let i=1;i<=5;i++){
+      const b = document.createElement('button'); b.textContent = i;
+      if (i === get()) b.classList.add('on');
+      b.onclick = () => { set(i); buildRating(el, get, set); };
+      el.appendChild(b);
+    }
+  }
+  function formEntry(){
+    return { date:$('#f-date').value, bed:$('#f-bed').value, lat:+$('#f-lat').value||0, wakes:+$('#f-wakes').value||0,
+             waso:+$('#f-waso').value||0, wake:$('#f-wake').value, out:$('#f-out').value, quality, mood };
+  }
+  function updatePreview(){
+    const e = formEntry();
+    if (!e.bed || !e.wake || !e.out){ return; }
+    const c = compute(e);
+    $('#p-tst').textContent = fmtHM(c.tst);
+    $('#p-tib').textContent = fmtHM(c.tib);
+    $('#p-se').textContent = Math.round(c.se*100) + '%';
+    $('#p-se').className = seClass(c.se);
+  }
+  function showSaveFeedback(se){
+    const fb = $('#save-feedback');
+    const info = seFeedback(se);
+    fb.className = info.cls + ' show';
+    fb.innerHTML = `<button type="button" class="fb-close" aria-label="关闭">×</button>
+      <div class="fb-title">${info.title}</div>
+      <div>${info.tip}</div>
+      <button type="button" class="btn ghost sm" id="go-weekly">去看每周建议</button>`;
+    fb.querySelector('.fb-close').onclick = () => { fb.classList.remove('show'); fb.innerHTML = ''; };
+    fb.querySelector('#go-weekly').onclick = () => {
+      history.replaceState(null,'','#weekly'); show('weekly');
+    };
+  }
+  function prefillFromLast(){
+    const last = lastUserEntry();
+    if (!last) return;
+    if (last.bed) $('#f-bed').value = last.bed;
+    if (last.wake) $('#f-wake').value = last.wake;
+    if (last.out) $('#f-out').value = last.out;
+    if (last.lat != null) $('#f-lat').value = last.lat;
+    // 夜醒默认折叠为 0；若上次有值则带入但不强制展开
+    if (last.wakes != null) $('#f-wakes').value = last.wakes;
+    if (last.waso != null) $('#f-waso').value = last.waso;
+  }
+  function renderEntries(){
+    const list = allEntries();
+    const box = $('#entries');
+    if (!list.length){ box.innerHTML = '<p class="hint" style="padding:12px 0">还没有记录，从今晚开始吧 🌙</p>'; }
+    else box.innerHTML = list.map(e => {
+      const c = compute(e); const d = new Date(e.date + 'T00:00');
+      const wk = '日一二三四五六'[d.getDay()];
+      return `<div class="entry">
+        <div class="d"><b>${d.getMonth()+1}/${d.getDate()}</b>周${wk}</div>
+        <div class="m"><div class="t">${e.bed} 上床 → ${e.out} 离床 ${e.sample ? '<span class="badge">示例数据</span>' : ''}</div>
+          睡 ${fmtHM(c.tst)} · 入睡 ${e.lat} 分 · 醒 ${e.wakes} 次<br>质量 ${'★'.repeat(e.quality)}${'☆'.repeat(5-e.quality)} · 情绪 ${e.mood}/5</div>
+        <div class="se"><b class="${seClass(c.se)}">${Math.round(c.se*100)}%</b><span>睡眠效率</span></div>
+        ${e.sample ? '' : `<button class="del" data-id="${e.id}" title="删除">×</button>`}
+      </div>`;
+    }).join('');
+    box.querySelectorAll('.del').forEach(b => b.onclick = () => {
+      saveUser(loadUser().filter(x => x.id !== b.dataset.id)); renderEntries(); toast('已删除');
+    });
+    $('#toggle-sample').textContent = sampleHidden() ? '显示示例数据' : '隐藏示例数据';
+  }
+  $('#toggle-sample').onclick = () => { localStorage.setItem(KEY_SAMPLE, sampleHidden() ? '0' : '1'); renderEntries(); };
+  $('#save').onclick = () => {
+    const e = formEntry();
+    if (!e.date || !e.bed || !e.wake || !e.out){ toast('请填写完整时间'); return; }
+    const c = compute(e);
+    if (c.tib > 16*60){ toast('卧床时间超过 16 小时，请检查'); return; }
+    e.id = 'u' + Date.now();
+    const user = loadUser().filter(x => x.date !== e.date); user.push(e); saveUser(user);
+    renderEntries(); toast('已保存 · 睡眠效率 ' + Math.round(c.se*100) + '%');
+    showSaveFeedback(c.se);
+  };
+  ['#f-date','#f-bed','#f-lat','#f-wakes','#f-waso','#f-wake','#f-out'].forEach(s => $(s).addEventListener('input', updatePreview));
+  const yest = new Date(); yest.setDate(yest.getDate()-1); $('#f-date').value = ymd(yest);
+  prefillFromLast();
+  buildRating($('#r-quality'), ()=>quality, v=>{quality=v; updatePreview();});
+  buildRating($('#r-mood'), ()=>mood, v=>{mood=v; updatePreview();});
+
+  /* ---------- 2. 睡前情绪梳理（规则脚本模拟 AI） ---------- */
+  const RISK = /(自杀|轻生|不想活|活着没意思|结束生命|伤害自己|割腕|跳楼|去死|想死)/;
+  let step = 0, worry = '', distress = null, chatEnded = false;
+  const chatEl = $('#chat');
+  function scrollChat(){ const m = $('#main'); m.scrollTop = m.scrollHeight; }
+  function updateChatProgress(){
+    const label = $('#chat-step-label');
+    if (!label) return;
+    if (chatEnded || step >= 6 || step === 99){
+      label.textContent = step === 99 ? '请寻求真人支持' : '已完成 · 请放下手机';
+    } else {
+      const n = Math.min(Math.max(step, 1), 5);
+      label.textContent = '第 ' + n + '/5 步';
+    }
+  }
+  function addMsg(text, who, opts={}){
+    const w = document.createElement('div'); w.className = 'who' + (who==='me' ? ' r' : '');
+    w.textContent = who === 'me' ? '我' : '眠心助手 · 原型演示：AI 回复为模拟';
+    chatEl.appendChild(w);
+    const m = document.createElement('div'); m.className = 'msg ' + who + (opts.alert ? ' alert' : '');
+    m.textContent = text;
+    if (opts.help){ const h = document.createElement('div'); h.className = 'help-card';
+      h.innerHTML = '📞 <b>学校心理咨询中心</b>：工作日可预约面谈（示例：学生活动中心 3 楼）<br>☎️ 心理援助热线：12356<br>🚑 紧急情况：120 / 110，或告诉身边信任的人、辅导员';
+      m.appendChild(h); }
+    if (opts.breath){
+      const b = document.createElement('div'); b.className = 'breath-card';
+      b.innerHTML = '<b>4-7-8 呼吸（约 1 分钟）</b><br>① 用鼻子轻轻吸气，默数 4<br>② 屏住呼吸，默数 7<br>③ 用嘴缓缓呼气，默数 8<br>重复 3～4 轮。调暗灯光，做完请锁屏或把手机拿远。';
+      m.appendChild(b);
+    }
+    if (opts.chips){ const c = document.createElement('div'); c.className = 'chips';
+      opts.chips.forEach(t => { const b = document.createElement('button'); b.textContent = t;
+        b.onclick = () => { c.remove(); handle(t); }; c.appendChild(b); });
+      m.appendChild(c); }
+    chatEl.appendChild(m); scrollChat();
+  }
+  function aiSay(text, opts, delay=450){ setTimeout(() => { addMsg(text, 'ai', opts); updateChatProgress(); }, delay); }
+
+  function endChatSession(){
+    chatEnded = true;
+    $('#composer').classList.add('hidden');
+    updateChatProgress();
+  }
+
+  function startChat(){
+    chatEl.innerHTML = ''; step = 1; worry = ''; distress = null; chatEnded = false;
+    $('#composer').classList.remove('hidden');
+    // 仅当当前在 chat tab 时显示 composer（show 会再管一次）
+    if (!$('#view-chat').classList.contains('active')) $('#composer').classList.add('hidden');
+    updateChatProgress();
+    addMsg('晚上好 🌙 睡前脑子停不下来很常见。\n我们用约 5 步把担心“放下来”：先点选或写下此刻最占据你脑子的一件事。', 'ai',
+      { chips:['学业/考试','对未来迷茫','升学考研考公','实习就业','室友关系','家庭','没什么特别'] });
+  }
+  function handle(text){
+    text = text.trim(); if (!text) return;
+    if (chatEnded && !/重新开始/.test(text)){
+      addMsg(text, 'me');
+      aiSay('今晚的梳理已结束。请锁屏或把手机拿远。若要再整理，点「重新开始一次」。', { chips:['重新开始一次'] });
+      return;
+    }
+    addMsg(text, 'me');
+    if (RISK.test(text)){
+      aiSay('谢谢你愿意说出来，你现在的感受很重要。这些想法需要真人专业支持，而不是一个演示程序。\n请现在就联系下面的资源，或者告诉一位你信任的人陪着你。', { alert:true, help:true });
+      step = 99; updateChatProgress(); return;
+    }
+    if (/去做 4-7-8 呼吸|4-7-8/.test(text) && step >= 5){
+      aiSay('好，跟着做一轮：', { breath:true, chips:['结束并放下手机','重新开始一次'] });
+      return;
+    }
+    if (/结束并放下手机/.test(text)){
+      aiSay('好。请现在锁屏或把手机拿远，调暗灯光。晚安 🌙', { chips:['重新开始一次'] });
+      endChatSession();
+      return;
+    }
+    switch(step){
+      case 1:
+        worry = text; step = 2; updateChatProgress();
+        aiSay(`听起来“${text.length > 18 ? text.slice(0,18)+'…' : text}”让你挺放不下的。\n如果用 0–10 分打分，这件事此刻让你有多难受？`, { chips:['0-3 还好','4-7 有点难受','8-10 非常难受'] });
+        break;
+      case 2: {
+        const n = parseInt(text, 10);
+        distress = /8-10|非常/.test(text) || n >= 8 ? 'high' : /4-7|有点/.test(text) || n >= 4 ? 'mid' : 'low';
+        step = 3; updateChatProgress();
+        if (distress === 'high'){
+          aiSay('这个分数说明你现在真的很不好受，先给自己一点肯定：你愿意面对它。\n如果这种难受持续好几天，或影响到上课、吃饭和睡觉，建议你预约学校心理咨询中心聊一聊。', { help:true });
+          aiSay('我们先试着把今晚过好。这件事——今晚躺在床上，你能做点什么来解决它吗？', { chips:['能，现在就能做一点','不能，只能明天再说'] }, 1100);
+        } else {
+          aiSay('好的。我们分辨一下：这件事——今晚躺在床上，你能做点什么来解决它吗？', { chips:['能，现在就能做一点','不能，只能明天再说'] });
+        }
+        break; }
+      case 3:
+        step = 4; updateChatProgress();
+        if (/^能/.test(text)){
+          aiSay('那就花 2 分钟，把“明天第一步要做的具体小事”写下来（例如：8 点去图书馆复习第 3 章）。写完它就交给明天的你了。\n写好后发给我吧。');
+        } else {
+          aiSay('对，很多担心在深夜是“解决不了”的，反复想只会让大脑更清醒。\n我们换个角度看看：关于这件事，最坏会怎样？最可能会怎样？', { chips:['最坏是搞砸了','其实最可能是还行','我说不清'] });
+        }
+        break;
+      case 4:
+        step = 5; updateChatProgress();
+        aiSay('谢谢你写下来。再试一个“换位”练习：\n如果你最好的朋友带着同样的担心来找你，你会对 TA 说什么？', { chips:['会说你已经尽力了','会说一次没做好也不代表什么','会让 TA 先好好睡一觉'] });
+        break;
+      case 5: {
+        step = 6;
+        const t = new Date(); t.setDate(t.getDate()+1);
+        const list = JSON.parse(localStorage.getItem(KEY_WORRY) || '[]');
+        list.push({ worry, reframe:text, at: ymd(t) + ' 18:00' }); localStorage.setItem(KEY_WORRY, JSON.stringify(list));
+        aiSay(`这句话也送给你自己 💜\n\n📌 我已把“${worry.length > 14 ? worry.slice(0,14)+'…' : worry}”放进【担忧清单】，安排在 明天 18:00 的“担忧时间”（15 分钟）再处理。今晚如果它又冒出来，就对自己说：“我已经安排好时间了，现在先放下。”`);
+        aiSay('梳理到这里就够了。\n\n请现在锁屏或把手机拿远，调暗灯光。\n可选：做几轮 4-7-8 呼吸（吸气 4 秒、屏息 7 秒、呼气 8 秒）。\n有困意再上床；躺下约 20 分钟仍睡不着，就起身去别的房间做点安静的事。\n无论几点睡着，明早按固定时间起床。\n\n晚安 🌙', { chips:['去做 4-7-8 呼吸','结束并放下手机','重新开始一次'] }, 1200);
+        updateChatProgress();
+        break; }
+      default:
+        if (/重新开始/.test(text)) { chatEnded = false; setTimeout(startChat, 300); }
+        else aiSay('今晚的梳理已经完成啦。请放下手机。如果想再整理一件事，点“重新开始一次”。', { chips:['重新开始一次','结束并放下手机'] });
+    }
+  }
+  $('#chat-send').onclick = () => { const i = $('#chat-input'); handle(i.value); i.value = ''; };
+  $('#chat-input').addEventListener('keydown', e => { if (e.key === 'Enter' && !e.isComposing){ $('#chat-send').click(); } });
+
+  /* ---------- 3. 每周建议 ---------- */
+  function advOn(){ return localStorage.getItem(KEY_ADV) === '1'; }
+  function setAdv(on){ localStorage.setItem(KEY_ADV, on ? '1' : '0'); }
+
+  function oneLiner(avgSE, avgLat, outSpread){
+    const sePct = Math.round(avgSE * 100);
+    let sePart = sePct >= 85 ? `效率约 ${sePct}%，整体不错` : sePct >= 75 ? `效率约 ${sePct}%，还有提升空间` : `效率约 ${sePct}%，卧床清醒偏多`;
+    let latPart = avgLat > 30 ? `，入睡平均要 ${Math.round(avgLat)} 分钟` : avgLat > 15 ? `，入睡大约 ${Math.round(avgLat)} 分钟` : '';
+    let outPart = outSpread > 90 ? `；起床时间差了 ${fmtHM(outSpread)}，作息有点飘` : outSpread > 45 ? `；起床相差约 ${fmtHM(outSpread)}` : '；起床相对规律';
+    return sePart + latPart + outPart + '。';
+  }
+
+  function renderWeekly(){
+    const last7 = allEntries().slice(0,7).reverse();
+    const box = $('#weekly');
+    if (last7.length < 3){
+      box.innerHTML = '<div class="card"><h3>📊 每周建议</h3><p class="hint">至少记录 3 天日记后，才能生成可靠的建议。</p></div>'
+        + '<p class="disclaimer">需要帮助时：学校心理咨询中心；心理援助热线 12356。</p>';
+      return;
+    }
+    const cs = last7.map(compute);
+    const avg = a => a.reduce((s,x)=>s+x,0)/a.length;
+    const avgTST = avg(cs.map(c=>c.tst)), avgTIB = avg(cs.map(c=>c.tib));
+    const avgSE = avgTST / avgTIB;
+    const avgMood = avg(last7.map(e=>e.mood));
+    const avgLat = avg(last7.map(e=>e.lat));
+    const outs = last7.map(e => toMin(e.out));
+    const outSpread = Math.max(...outs) - Math.min(...outs);
+    const hasSample = last7.some(e=>e.sample);
+
+    const windowMin = Math.max(330, Math.round(avgTST/15)*15);
+    const fixedWake = Math.round(Math.min(...outs)/15)*15;
+    const bedTime = fixedWake - windowMin;
+
+    const lowN = last7.filter((e,i)=>cs[i].se < .8), hiN = last7.filter((e,i)=>cs[i].se >= .8);
+    const moodLow = lowN.length ? avg(lowN.map(e=>e.mood)) : null, moodHi = hiN.length ? avg(hiN.map(e=>e.mood)) : null;
+
+    let status, statusTag;
+    if (avgSE < .85){ status = 'low'; statusTag = '需要调整'; }
+    else if (avgSE < .90){ status = 'ok'; statusTag = '保持当前'; }
+    else { status = 'good'; statusTag = '可以适当延长'; }
+
+    const chart = last7.map((e,i) => {
+      const se = Math.round(cs[i].se*100);
+      return `<div class="col"><div class="bar se" style="height:${se}%"><em>${se}</em></div><div class="bar mood" style="height:${e.mood*20}%"><em>${e.mood}</em></div></div>`;
+    }).join('');
+    const xl = last7.map(e => { const d = new Date(e.date+'T00:00'); return `<span>${d.getMonth()+1}/${d.getDate()}</span>`; }).join('');
+
+    // 优先行动建议（最多 3 条）
+    const top = [];
+    const more = [];
+    // 1) 固定起床（始终优先）
+    top.push(`<b>固定起床时间 ${clock(fixedWake)}</b>（含周末，误差尽量不超过 30 分钟）。你这周离床相差 ${fmtHM(outSpread)}。`);
+    // 2) 刺激控制 / 20 分钟 / 入睡偏长
+    if (avgLat > 30){
+      top.push(`入睡偏长（平均 ${Math.round(avgLat)} 分）：睡前用「睡前情绪梳理」点选把担心写下来，交给明天的担忧时间。`);
+    } else if (status === 'low'){
+      top.push(`<b>刺激控制</b>：只在困了的时候上床；床只用于睡眠（不刷手机、追剧、学习）。`);
+    } else {
+      top.push(`<b>刺激控制</b>：只在困了的时候上床；床只用于睡眠（不刷手机、追剧、学习）。`);
+    }
+    if (top.length < 3){
+      top.push(`<b>20 分钟规则</b>：躺下约 20 分钟仍睡不着（凭感觉），就起床去光线柔和处做安静的事，困了再回床。`);
+    }
+    // 更多说明
+    if (status === 'low'){
+      more.push(`平均睡眠效率 <b>${Math.round(avgSE*100)}%</b>，低于 85%：躺在床上清醒偏多，床和“清醒、焦虑”的联系可能变强。`);
+    } else if (status === 'ok'){
+      more.push(`平均睡眠效率 <b>${Math.round(avgSE*100)}%</b>，处于良好区间，保持当前作息即可。`);
+    } else {
+      more.push(`平均睡眠效率 <b>${Math.round(avgSE*100)}%</b>，很棒！可观察一周后再决定是否把上床时间提前 15 分钟。`);
+    }
+    more.push(`白天<b>不补觉</b>或午睡不超过 30 分钟且在 15:00 前；下午 2 点后少喝咖啡、奶茶等。`);
+    if (avgLat > 30 && !top.some(s => s.includes('入睡偏长'))){
+      more.push(`睡前 1 小时可用「睡前情绪梳理」把担忧写下来。`);
+    }
+    if (status === 'low' && advOn()){
+      more.push(`卧床窗口约 <b>${fmtHM(windowMin)}</b>：建议 <b>${clock(bedTime)} 之前不上床</b>。效率 ≥90% 可提前 15 分钟上床；85–90% 保持；仍 &lt;85% 请与专业人员讨论。`);
+    }
+
+    const advChecked = advOn() ? 'checked' : '';
+    let windowBlock = '';
+    if (status === 'low'){
+      if (advOn()){
+        windowBlock = `<div class="card"><h3>🛏️ 本周建议的卧床窗口 <span class="badge warn">进阶·睡眠限制</span></h3>
+          <div class="window"><div><b>${clock(bedTime)}</b><span>最早上床</span></div><div class="arrow">—— ${fmtHM(windowMin)} ——</div><div><b>${clock(fixedWake)}</b><span>固定起床</span></div></div>
+          <p class="hint">刚开始几天白天可能更困，属正常现象。<b>白天困倦时避免疲劳驾驶</b>；情绪很差或有睡眠障碍诊断时请先咨询专业人员。若有双相情感障碍、癫痫、怀孕等情况，请勿自行执行睡眠限制。</p>
+          <label class="toggle-row"><input type="checkbox" id="adv-restrict" ${advChecked}> 开启进阶：缩短卧床窗口（可选）</label>
+        </div>`;
+      } else {
+        windowBlock = `<div class="card"><h3>🛏️ 起床与卧床参考</h3>
+          <p class="hint" style="margin-bottom:8px">当前优先：<b>固定起床 ${clock(fixedWake)}</b>。下方窗口仅作参考，未开启进阶调整。</p>
+          <div class="window ref-only"><div><b>${clock(bedTime)}</b><span>参考最早上床</span></div><div class="arrow">—— ${fmtHM(windowMin)} ——</div><div><b>${clock(fixedWake)}</b><span>固定起床</span></div></div>
+          <label class="toggle-row"><input type="checkbox" id="adv-restrict" ${advChecked}> 开启进阶：缩短卧床窗口（可选）</label>
+          <p class="hint">开启后才展示完整睡眠限制调整规则。<b>白天困倦时避免疲劳驾驶</b>；情绪很差或有睡眠障碍诊断时请先咨询专业人员。</p>
+        </div>`;
+      }
+    }
+
+    box.innerHTML = `
+      ${hasSample ? '<div class="demo-tag"><span>当前分析包含 示例数据</span></div>' : ''}
+      <div class="oneliner"><div class="ol-label">本周一句话</div>${oneLiner(avgSE, avgLat, outSpread)}</div>
+      <div class="kpis">
+        <div class="kpi big"><div><span>近 ${last7.length} 天平均睡眠效率</span><b>${Math.round(avgSE*100)}%</b></div><span class="tag">${statusTag}</span></div>
+        <div class="kpi"><b>${fmtShort(avgTST)}</b><span>平均睡眠</span></div>
+        <div class="kpi"><b>${fmtShort(avgTIB)}</b><span>平均卧床</span></div>
+        <div class="kpi"><b>${avgMood.toFixed(1)}</b><span>平均情绪 /5</span></div>
+      </div>
+      <div class="card">
+        <h3>📈 近 7 天睡眠效率与情绪</h3>
+        <div class="chart" style="margin-top:18px"><div class="ref" style="bottom:85%">85%</div>${chart}</div>
+        <div class="xlabels">${xl}</div>
+        <div class="legend"><span><i style="background:#7d8fe0"></i>睡眠效率 %</span><span><i style="background:#ac9ae3"></i>情绪（1–5，按 ×20 显示）</span></div>
+        ${moodLow!==null && moodHi!==null ? `<p class="hint" style="margin-top:8px">💡 睡眠效率 &lt;80% 的夜晚，次日平均情绪 <b>${moodLow.toFixed(1)}</b>；≥80% 时为 <b>${moodHi.toFixed(1)}</b>。睡眠与情绪是双向影响的：睡得好有助于情绪调节，睡前情绪平稳也更容易入睡。</p>` : ''}
+      </div>
+      ${windowBlock}
+      <div class="card"><h3>✅ 今天就能做的 1–3 件事</h3>
+        ${top.slice(0,3).map((s,i)=>`<div class="sugg"><div class="n">${i+1}</div><p>${s}</p></div>`).join('')}
+        ${more.length ? `<details class="more-fold"><summary>更多说明</summary>${more.map((s,i)=>`<div class="sugg"><div class="n">${i+1}</div><p>${s}</p></div>`).join('')}</details>` : ''}
+      </div>
+      <p class="hint" style="padding:0 4px 4px">建议基于失眠认知行为疗法（CBT-I）中的刺激控制与睡眠限制原则自动生成，仅供参考。若失眠持续 3 个月以上或严重影响学习生活，请前往学校心理咨询中心或医院睡眠门诊。</p>
+      <p class="disclaimer">需要帮助时：学校心理咨询中心；心理援助热线 12356。眠心是自助工具，不能替代诊疗。</p>`;
+
+    const advEl = $('#adv-restrict');
+    if (advEl){
+      advEl.onchange = () => { setAdv(advEl.checked); renderWeekly(); };
+    }
+  }
+
+  /* ---------- Tab 切换 ---------- */
+  const META = {
+    diary: ['睡眠日记', '约 1 分钟 · 填完立即看到睡眠效率'],
+    chat: ['睡前情绪梳理', '点选为主 · 约 5 步 · 结束后请放下手机'],
+    weekly: ['每周建议', '白话解读 + 今天就能做的 1–3 件事'],
+  };
+  function show(tab){
+    if (!META[tab]) tab = 'diary';
+    document.querySelectorAll('nav.tabs button').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
+    document.querySelectorAll('.view').forEach(v => v.classList.toggle('active', v.id === 'view-' + tab));
+    $('#title').textContent = META[tab][0]; $('#subtitle').textContent = META[tab][1];
+    const showComposer = tab === 'chat' && !chatEnded;
+    $('#composer').classList.toggle('hidden', !showComposer);
+    if (tab === 'weekly') renderWeekly();
+    if (tab === 'chat' && !chatEl.children.length) startChat();
+    $('#main').scrollTop = 0;
+    if (tab === 'chat') scrollChat();
+  }
+  document.querySelectorAll('nav.tabs button').forEach(b => b.onclick = () => { history.replaceState(null,'','#'+b.dataset.tab); show(b.dataset.tab); });
+
+  const now = new Date(); $('#clock').textContent = String(now.getHours()).padStart(2,'0') + ':' + String(now.getMinutes()).padStart(2,'0');
+  renderEntries(); updatePreview();
+
+  function applyHash(){
+    const hash = location.hash.slice(1);
+    if (hash === 'chat-demo'){
+      show('chat');
+      const script = ['学业/考试','8-10 非常难受'];
+      script.forEach((t,i) => setTimeout(() => { chatEl.querySelectorAll('.chips').forEach(c=>c.remove()); handle(t); }, 300 + i*900));
+    } else show(hash);
+  }
+  window.addEventListener('hashchange', applyHash);
+  applyHash();
+})();
+</script>
+</body>
+</html>
